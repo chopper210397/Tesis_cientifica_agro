@@ -3,7 +3,7 @@
     "path": "C:/Users/LBarrios/Desktop/Tesis_cientifica_agro/regresionagro.R",
     "project_path": "regresionagro.R",
     "type": "r_source",
-    "hash": "1577981382",
+    "hash": "1062625078",
     "contents": "",
     "dirty": false,
     "created": 1637866606255.0,
@@ -13,15 +13,15 @@
         "tempName": "Untitled1",
         "source_window_id": "",
         "Source": "Source",
-        "cursorPosition": "0,34",
+        "cursorPosition": "9,0",
         "scrollLine": "0"
     },
     "folds": "",
-    "lastKnownWriteTime": 1637866652,
+    "lastKnownWriteTime": 1637868145,
     "encoding": "UTF-8",
     "collab_server": "",
     "source_window": "",
-    "last_content_update": 1637866652354,
+    "last_content_update": 1637868145592,
     "read_only": false,
     "read_only_alternatives": []
 }
