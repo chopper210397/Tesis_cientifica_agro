@@ -1,0 +1,1 @@
+# regresion lineal agro vs pobreza
