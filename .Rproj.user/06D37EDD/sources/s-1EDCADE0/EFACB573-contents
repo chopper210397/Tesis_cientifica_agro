@@ -1,0 +1,113 @@
+rm(list=ls())
+
+directorio = dirname(rstudioapi::getSourceEditorContext()$path)
+setwd(directorio)
+dirmother = dirname(getwd())
+
+#--------------------------
+# Librerias
+#--------------------------
+library(readxl)
+library(lmtest)
+library(skedastic)
+library(stargazer)
+library(gplots)
+library(plm)
+library(plyr)
+library(tidyverse)
+library(stringi)
+library(foreign)
+library(DescTools)
+
+#--------------
+#CARGAR DATOS
+#--------------
+
+
+datos<-read_excel("datos_tesis.xlsx")
+
+
+#-----------------------
+# CREACION DE VARIABLES
+#-----------------------
+
+datos$rend <- (datos$prodcafe/datos$areacosech)*1000
+datos$rend <- ifelse(datos$rend == "NaN", 0, datos$rend)
+
+
+datos$ingvent <- (datos$prodcafe/datos$precha)
+datos$ingvent <- ifelse(datos$ingvent == "NaN", 0, datos$ingvent)
+datos$ingvent <- ifelse(datos$ingvent == "Inf", 0, datos$ingvent)
+
+
+datos$pbipercap <- (datos$pbireg/datos$pob)
+
+
+
+
+#-------------------------
+#PLM PBI REGIONAL
+#------------------------
+
+
+#---------------------------
+#posibleas modelos
+#---------------------------
+
+modelo12a <-  plm(pobre ~  prodcafe,
+                 data = datos, effects = "twoways", model = "within", index = c("depa", "year"))
+
+summary(modelo12a)
+
+
+modelo12b <-  plm(pobre ~  edusup,
+                 data = datos, effects = "twoways", model = "within", index = c("depa", "year"))
+
+summary(modelo12b)
+
+
+modelo12c <-  plm(pobre ~  prodcafe + edusup,
+                 data = datos, effects = "twoways", model = "within", index = c("depa", "year"))
+
+summary(modelo12c)
+
+
+
+library(stargazer)
+stargazer(modelo12a,modelo12b,modelo12c,type="text")
+
+
+
+
+
+#---------------------
+#graficos POBREZA
+#---------------------
+
+#----------------------------------------------- 
+#Correlaci?n entre Pobreza y producci?n de cafe
+#----------------------------------------------
+
+gra1 <- plot(datos$prodcafe,datos$pobre,type="p",main="a) Pobreza y Producci?n de cafe",
+             xlab="Producci?n de cafe", ylab="Pobreza",col="blue",lwd=2)
+abline(lm(datos$pobre ~ datos$prodcafe),col="red")
+
+
+#----------------------------------------------- 
+#Correlaci?n entre Pobreza y educacion superior
+#----------------------------------------------
+
+gra2 <- plot(datos$edusup,datos$pobre,type="p",main="a) Pobreza y Educacion superior",
+             xlab="Educacion superior", ylab="Pobreza",col="blue",lwd=2)
+abline(lm(datos$pobre ~ datos$edusup),col="red")
+
+
+
+
+-------------------------
+#OLS PBI REGIONAL
+-------------------------
+plm(fomrula = pbireg ~ prodcafe + precha + ingvent + rend, data = datos, effects = "twoways", model = "within", index = c("depa", "year"))
+
+
+
