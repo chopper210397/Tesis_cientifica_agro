@@ -1,0 +1,311 @@
+#--------------------------
+# Librerias
+#--------------------------
+
+# install.packages("lmtest")
+# install.packages("skedastic")
+# install.packages("stargazer")
+# install.packages("gplots")
+# install.packages("plyr")
+# install.packages("stringi")
+# install.packages("foreign")
+# install.packages("DescTools")
+# install.packages("rgdal")
+# install.packages("rgeos")
+# install.packages("sp")
+# install.packages("tmap")
+ 
+library(leaflet)
+library(rgdal)
+library(rgeos)
+library(sp)
+library(tmap)
+library(foreign)
+library(readxl)
+library(lmtest)
+library(skedastic)
+library(stargazer)
+library(gplots)
+library(plm)
+library(plyr)
+library(tidyverse)
+library(stringi)
+library(foreign)
+library(DescTools)
+library(car)
+library(kableExtra)
+library(tidyr)
+library(broom)
+install.packages("ozmaps")
+library(ozmaps)
+
+peru_d <- st_read("C:/Users/User/Downloads/MAPA/dp.shp")
+
+peru_d
+
+ggplot(data = peru_d) +
+  geom_sf()
+
+
+oz_states <- ozmaps::ozmap_states
+oz_states
+
+ggplot(mapa, aes(bbox, lat)) + 
+  geom_point(size = .25, show.legend = FALSE) +
+  coord_quickmap()
+
+ggplot(mi_counties, aes(lon, lat, group = group)) +
+  geom_polygon(fill = "white", colour = "grey50") + 
+  coord_quickmap()
+
+ggplot(oz_states) + 
+  geom_sf() + 
+  coord_sf()
+
+
+
+mapa<-readOGR("C:/Users/User/Downloads/MAPA/dp.shp")
+names(mapa)
+
+names(mapa)[4]="depa"
+
+nombresdepas<-mapa$depa
+as.data.frame(nombresdepas)
+datamapaagro$depa<-nombresdepas[-7]
+datamapaagro$depa
+cafemapa1@data<-cafemapa1@data[cafemapa1$depa!="CALLAO",]
+
+ggplot() +
+  geom_sf(data = cafemapa1, aes(fill=cafemapa1@data[["produccioncafe"]]))      
+
+
+cafemapa1@data[["produccioncafe"]][7]
+# install.packages("car")
+#---------------------------------------- PARTE REALIZADA POR MI ---------------------------------------#
+
+# regresion lineal agro vs pobreza
+
+dataagro<-read_xlsx("excel1.xlsx")
+
+datamapaagro<-dataagro %>% group_by(depa) %>% summarise(sum(prodcafe))
+names(datamapaagro)[2]="produccioncafe"
+names(dataagro)
+
+cafemapa<-merge(mapa,datamapaagro,by="depa")
+
+qtm(cafemapa,fill="produccioncafe",col="col_blind",tmap_options(check.and.fix = TRUE))
+
+# "depa"       "year"       "pbireg"     "prodcafe"   "pbiagri"    "precha"     "areacosech"     
+# "peareg"     "edusup"     "exportcafe" "pob"        "pobre" 
+
+# mdelo econometrico relacionando pobreza con producción de cafe y educacion superior
+
+#------- modelo de efectos fijos --------#
+
+fixedmodel<-plm(formula = pobre~prodcafe + edusup,
+    data = dataagro, model = "within",
+    index = c("depa","year"),
+    effects = "twoways" )
+
+summary(fixemodel)
+#------- modelo de efectos aleatorios --------#
+
+randommodel<-plm(formula = pobre~prodcafe + edusup,
+    data = dataagro, model = "random",
+    index = c("depa","year"),
+    effects = "twoways" )
+
+summary(randommodel)
+
+#------- modelo pooling --------#
+
+poolmodel<-plm(formula = pobre~prodcafe + edusup,
+                data = dataagro, model = "pooling",
+                index = c("depa","year"),
+                effects = "twoways" )
+
+summary(poolmodel)
+#------------ Elección entre ambos modelos ------------#
+
+#--------- Test de Hausman-----------#
+# Hipótesis nula igual a que el modelo preferido es el de efectos aleatorios
+#   "         "   igual a que los erroes unicos no estan correlacionados con los regresores
+phtest(fixedmodel, randommodel)
+
+# si es menor a 0.05 usar efectos fijos, si es mayor usar efectos aleatorios
+# en esta ocasion el p-value es mayor a 0.05, por lo tanto seguiremos con efectos aleatorios
+
+
+#---------- Breusch Pagan ------------#
+plmtest(poolmodel, type=c("bp"))
+
+# como es menor a 0.05, si hay diferencia significante entre los departamentos
+# por lo tanto es apropiado utilizar el modelo de efectos aleatorios
+
+#-----------tabla modelos ------------#
+kable(tidy(randommodel), digits=3, 
+      caption="Random model")
+
+#graficos que relacionan la produccion de cafe a través de los años por departamento
+coplot(prodcafe ~ year|depa, type="l", data=dataagro) # Lines # no paree muy util
+
+scatterplot(prodcafe~year|depa,
+            boxplots=FALSE,
+            smooth=TRUE,
+            reg.line=FALSE,
+            data=dataagro) # se ve util aunque se podria escoger menos departamentos
+
+# heterogeneidad a traves de los departamentos
+plotmeans(prodcafe ~ depa,
+          main="Heterogeineity across departments",
+          data=dataagro,
+          connect = FALSE,
+          n.label = FALSE,
+          xlab = "Departamentos",
+          ylab = "Producción de café")
+
+# heterogeneidad a través de los años
+plotmeans(prodcafe ~ year,
+          main="Heterogeineity across years",
+          data=dataagro,
+          n.label = FALSE,
+          xlab = "Años",
+          ylab = "Producción de café")
+
+# separated lineplot
+ggplot(data = dataagro, aes(x = year, y = prodcafe)) +
+  geom_line(aes(colour = as.factor(depa))) +
+  geom_smooth(method = "lm", se = F, lty = "dashed") +
+  labs(x = "Year",  y = "Producción de café") +
+  theme(legend.position = "top")
+
+# heterogeneidad mediante boxplots por departamento
+dataagro %>%
+  group_by(depa) %>%
+  summarise(inv_mean = mean(prodcafe)) %>%
+  left_join(dataagro) %>%
+  ggplot(data = ., 
+         aes(x = reorder(as.character(depa), depa), y = prodcafe)) +
+  geom_boxplot() +
+  geom_line(aes(x = depa, y = inv_mean), col = "blue") +
+  labs(x = "Firm", y = "Gross Investment")+coord_flip()
+
+# tendencia de la produccion de cafe en el país a través de los años de estudio
+dataagro %>%
+  group_by(year) %>% 
+  summarise(produccion=mean(prodcafe)) %>% 
+  ggplot(aes(x=year,y=produccion))+geom_smooth()
+
+# producción de café por departamento ordenado de mayor a menos
+dataagro %>%
+  group_by(depa) %>%
+  summarise(produccion=sum(prodcafe)) %>%
+  ggplot(aes(x=reorder(depa,produccion),y=produccion))+
+  geom_bar(stat = "sum",fill="lightblue",show.legend = FALSE)+
+  coord_flip()
+# tenemos que los mas altos son san martin , junin, cajamarca, amazonas, cusco, paco, puno
+
+#---------- correlaciones -----------#
+# correlacion entre produccion de cafe y pobreza
+# se encontro una correlación pequeña
+# se observa que debilmente a medida que se incrementa la producción de café disminuye la pobreza
+dataagro %>% filter(prodcafe>5) %>% 
+  ggplot( mapping = aes(x=prodcafe, y=pobre))+
+  geom_smooth()
+
+cor(dataagro$pobre,dataagro$prodcafe)
+
+
+# correlacion entre educacion superior y pobreza
+# se observa una correlación elevada
+# a medida que se incrementa la educación superior, la pobreza en los individuos disminuye
+ggplot(data = dataagro, mapping = aes(x=edusup, y=pobre))+
+  geom_smooth()
+
+cor(dataagro$pobre,dataagro$edusup)
+
+
+# grafico de estimación por variable
+dataagro %>% filter(prodcafe>5) %>% 
+ggplot(aes(x = prodcafe, y = pobre)) +
+  geom_point(aes(shape = factor(depa, 
+                                levels = c(1:24)))) +
+  geom_smooth(method = "lm", se = F) +
+  scale_shape_manual(values = 1:10) +
+  labs(x = "Producción de café",
+       y = "Pobreza",
+       shape = "depa")
+
+ 
+# grafico de estimación por variable
+ggplot(data = dataagro,
+       aes(x = edusup, y = pobre)) +
+  geom_point(aes(shape = factor(depa, 
+                                levels = c(1:10)))) +
+  geom_smooth(method = "lm", se = F) +
+  scale_shape_manual(values = 1:10) +
+  labs(x = "edusup",
+       y = "Pobreza",
+       shape = "depa")
+
+
+#---------------------------------------- PARTE REALIZADA POR LAS CHICAS -------------------------------#
+
+
+#---------------------------
+#posibles modelos
+#---------------------------
+# within <- modelo de efectos fijos
+# random <- modelo de efectos aleatorios
+
+#--------------------------------------------------------------------------------#
+# The reason for the index= option is that plm() internally uses pdata.frame()   #
+# which expects the first column to be the "id" and the second column to be the  #
+# "time" if the according names are not specified by index=(<id>, <time>)        #
+#--------------------------------------------------------------------------------#
+
+modelo12a <-  plm(pobre ~  prodcafe,
+                  data = dataagro, effects = "twoways", model = "within", index = c("depa", "year"))
+
+summary(modelo12a)
+
+
+modelo12b <-  plm(pobre ~  edusup,
+                  data = dataagro, effects = "twoways", model = "within", index = c("depa", "year"))
+
+summary(modelo12b)
+
+
+modelo12c <-  plm(pobre ~  prodcafe + edusup,
+                  data = dataagro, effects = "twoways", model = "within", index = c("depa", "year"))
+
+summary(modelo12c)
+
+
+
+library(stargazer)
+stargazer(modelo12a,modelo12b,modelo12c,type="text")
+
+sum(xasda)
+
+https://cloud.minsa.gob.pe/s/AC2adyLkHCKjmfm/download
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

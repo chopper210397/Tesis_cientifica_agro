@@ -10,6 +10,16 @@
 # install.packages("stringi")
 # install.packages("foreign")
 # install.packages("DescTools")
+# install.packages("rgdal")
+# install.packages("rgeos")
+# install.packages("sp")
+# install.packages("tmap")
+ 
+library(leaflet)
+library(rgdal)
+library(rgeos)
+library(sp)
+library(tmap)
 library(foreign)
 library(readxl)
 library(lmtest)
@@ -26,8 +36,50 @@ library(car)
 library(kableExtra)
 library(tidyr)
 library(broom)
+install.packages("ozmaps")
+library(ozmaps)
+
+peru_d <- st_read("C:/Users/User/Downloads/MAPA/dp.shp")
+
+peru_d
+
+ggplot(data = peru_d) +
+  geom_sf()
 
 
+oz_states <- ozmaps::ozmap_states
+oz_states
+
+ggplot(mapa, aes(bbox, lat)) + 
+  geom_point(size = .25, show.legend = FALSE) +
+  coord_quickmap()
+
+ggplot(mi_counties, aes(lon, lat, group = group)) +
+  geom_polygon(fill = "white", colour = "grey50") + 
+  coord_quickmap()
+
+ggplot(oz_states) + 
+  geom_sf() + 
+  coord_sf()
+
+
+
+mapa<-readOGR("C:/Users/User/Downloads/MAPA/dp.shp")
+names(mapa)
+
+names(mapa)[4]="depa"
+
+nombresdepas<-mapa$depa
+as.data.frame(nombresdepas)
+datamapaagro$depa<-nombresdepas[-7]
+datamapaagro$depa
+cafemapa1@data<-cafemapa1@data[cafemapa1$depa!="CALLAO",]
+
+ggplot() +
+  geom_sf(data = cafemapa1, aes(fill=cafemapa1@data[["produccioncafe"]]))      
+
+
+cafemapa1@data[["produccioncafe"]][7]
 # install.packages("car")
 #---------------------------------------- PARTE REALIZADA POR MI ---------------------------------------#
 
@@ -35,7 +87,14 @@ library(broom)
 
 dataagro<-read_xlsx("excel1.xlsx")
 
+datamapaagro<-dataagro %>% group_by(depa) %>% summarise(sum(prodcafe))
+names(datamapaagro)[2]="produccioncafe"
 names(dataagro)
+
+cafemapa<-merge(mapa,datamapaagro,by="depa")
+
+qtm(cafemapa,fill="produccioncafe",col="col_blind",tmap_options(check.and.fix = TRUE))
+
 # "depa"       "year"       "pbireg"     "prodcafe"   "pbiagri"    "precha"     "areacosech"     
 # "peareg"     "edusup"     "exportcafe" "pob"        "pobre" 
 
