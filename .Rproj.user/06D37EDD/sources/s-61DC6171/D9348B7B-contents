@@ -36,9 +36,10 @@ library(car)
 library(kableExtra)
 library(tidyr)
 library(broom)
-install.packages("ozmaps")
+# install.packages("ozmaps")
 library(ozmaps)
 
+#------- creacion del mapa-------------#
 peru_d <- st_read("C:/Users/User/Downloads/MAPA/dp.shp")
 
 peru_d
@@ -46,7 +47,60 @@ peru_d
 ggplot(data = peru_d) +
   geom_sf()
 
+ggplot(data = peru_d %>%
+         filter(NOMBDEP=="AREQUIPA")) +
+  geom_sf()
 
+#-------------- agrupando data prodafe por departamento -----------#
+names(dataagro)
+depascafe<-dataagro %>% group_by(depa) %>% summarise(prodcafe=sum(prodcafe))
+depascafe$depa<-toupper( depascafe$depa )
+names(depascafe)[1]="NOMBDEP"
+
+peru_datos<-peru_d %>% 
+  left_join(depascafe)
+#
+depaseducacion<-dataagro %>% group_by(depa) %>% summarise(edusup=sum(edusup))
+depaseducacion$depa<-toupper(depaseducacion$depa)
+names(depaseducacion)[1]="NOMBDEP"
+
+peru_datos_educ<-peru_d %>% 
+  left_join(depaseducacion)
+#---------- GENERANDO EL MAPA ---------#
+
+#--- PRODCAFE----#
+ggplot(peru_datos) +
+  geom_sf(aes(fill = prodcafe))+
+  labs(title = "Producción de café por departamentos 2007-2019",
+       caption = "Fuente: SIRTOD (2020)
+       Elaboración propia"
+       )+
+  scale_fill_continuous(low="white",
+                        high="red" ,
+                        guide_legend(title = "Producción de café"))+
+  theme(axis.ticks.x = element_blank(),
+        axis.text.x=element_blank(),
+        axis.ticks.y = element_blank(),
+        axis.text.y = element_blank())
+# COLORES BLANCOS DONDE PRODUCCIÓN CERCANA A CERO
+# ROJO CUANDO PRODUCCIÓN ES MAYOR
+
+#---- EDUSUP ----#
+ggplot(peru_datos_educ) +
+  geom_sf(aes(fill = edusup))+
+  labs(title = "Educación superior por departamentos 2007-2019",
+       caption = "Fuente: INEI (2020)
+       Elaboración propia"
+  )+
+  scale_fill_continuous(low="white",
+                        high="blue" ,
+                        guide_legend(title = "Educación superior"))+
+  theme(axis.ticks.x = element_blank(),
+        axis.text.x=element_blank(),
+        axis.ticks.y = element_blank(),
+        axis.text.y = element_blank())
+# mas azul mas nivel de educación
+#----------------------------------------------------
 oz_states <- ozmaps::ozmap_states
 oz_states
 
