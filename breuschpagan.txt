@@ -1,0 +1,2 @@
+"statistic" "p.value" "parameter" "method" "alternative"
+"1" 1053.73853515356 3.74754506628731e-231 1 "Lagrange Multiplier Test -  (Breusch-Pagan) for balanced panels" "significant effects"
