@@ -1,3 +1,9 @@
+#---------------------------------------------------------------------------#
+#---------------------------------------------------------------------------#
+#-------------------- AN罫ISIS PRELIMINAR DE DATOS -------------------------#
+#---------------------------------------------------------------------------#
+#---------------------------------------------------------------------------#
+
 #--------------------------
 # Librerias
 #--------------------------
@@ -16,8 +22,8 @@
 # install.packages("tmap")
 # install.packages("ozmaps") 
 # install.packages("gtsummary")
-
-
+# install.packages("psych")
+library(psych)
 library(gtsummary)
 library(leaflet)
 library(rgdal)
@@ -44,7 +50,7 @@ library(sf)
 
 #----------------------- IMPORTANDO DATA NECESARIA PARA EL PAPER -----------------------#
 peru_d <- st_read("C:/Users/LBarrios/Downloads/MAPA/dp.shp")
-dataagro<-read_xlsx("excel1.xlsx")
+dataagro <- read_xlsx("excel1.xlsx")
 
 #------- PROBANDO creacion del mapa-------------#
 # 
@@ -103,62 +109,7 @@ ggplot(peru_datos_educ) +
         axis.ticks.y = element_blank(),
         axis.text.y = element_blank())
 # mas azul mas nivel de educaci贸n
-#---------------------------------------- PARTE REALIZADA POR MI ---------------------------------------#
 
-# regresion lineal agro vs pobreza
-
-
-
-#------- modelo de efectos fijos --------#
-
-fixedmodel<-plm(formula = pobre~prodcafe + edusup,
-    data = dataagro, model = "within",
-    index = c("depa","year"),
-    effects = "twoways" )
-
-summary(fixedmodel)
-
-#------- modelo de efectos aleatorios --------#
-
-randommodel<-plm(formula = pobre~prodcafe + edusup,
-    data = dataagro, model = "random",
-    index = c("depa","year"),
-    effects = "twoways" )
-
-summary(randommodel)
-
-#------- modelo pooling --------#
-
-poolmodel<-plm(formula = pobre~prodcafe + edusup,
-                data = dataagro, model = "pooling",
-                index = c("depa","year"),
-                effects = "twoways" )
-
-summary(poolmodel)
-
-# generando tabla en formato latex
-stargazer(fixedmodel,randommodel,poolmodel,
-          column.labels =c("Efectos Fijos","Efectos Aleatorios","Pooled"),
-          title = "Comparaci贸n de modelos")
-#----------------------------- ELECCION ENTRE AMBOS MODELOS ----------------------#
-
-#--------- Test de Hausman-----------#
-# Hip贸tesis nula igual a que el modelo preferido es el de efectos aleatorios
-#   "         "   igual a que los erroes unicos no estan correlacionados con los regresores
-testhausman<-phtest(fixedmodel, randommodel)
-write.table(tidy(testhausman),"testhausman.txt")
-
-
-# si es menor a 0.05 usar efectos fijos, si es mayor usar efectos aleatorios
-# en esta ocasion el p-value es mayor a 0.05, por lo tanto seguiremos con efectos aleatorios
-
-
-#---------- Breusch Pagan ------------#
-breuschpagan<-plmtest(poolmodel, type=c("bp"))
-write.table(tidy(breuschpagan),"breuschpagan.txt")
-
-# como es menor a 0.05, si hay diferencia significante entre los departamentos
-# por lo tanto es apropiado utilizar el modelo de efectos aleatorios
 
 
 #----------------- GRAFICOS QUE RELACIONAN LA PRODUCCION DE CAFE A TRAV脡S DE LOS A脩OS POR DEPARTAMENTO -----------------#
@@ -268,15 +219,77 @@ ggplot(data = dataagro,
        y = "Pobreza",
        shape = "depa",title = "Estimaci贸n lineal entre pobreza y educaci贸n superior")
 
+resumen<-summary(dataagro)
+xtable(as.table(resumen), type = "latex")
+install.packages("xtable")
+library(xtable)
+
+#--------------------------------------------------------------------------------#
+#--------------------------------------------------------------------------------#
+#----------------------------- AN罫ISIS EMP蚏ICO --------------------------------#
+#--------------------------------------------------------------------------------#
+#--------------------------------------------------------------------------------#
+# - - - - - - - -- - - - MODELAMIENTO ECONOM蒚RICO - - - - - - - - - - - - - - - #
+# - - - - - - - -- - - - MODELAMIENTO ECONOM蒚RICO - - - - - - - - - - - - - - - #
+# - - - - - - - -- - - - MODELAMIENTO ECONOM蒚RICO - - - - - - - - - - - - - - - #
+# - - - - - - - -- - - - MODELAMIENTO ECONOM蒚RICO - - - - - - - - - - - - - - - #
+#--------------------------------------------------------------------------------#
+#--------------------------------------------------------------------------------#
+
+# regresion lineal agro vs pobreza
 
 
 
+#------- modelo de efectos fijos --------#
+
+fixedmodel<-plm(formula = pobre~prodcafe + edusup,
+    data = dataagro, model = "within",
+    index = c("depa","year"),
+    effects = "twoways" )
+
+summary(fixedmodel)
+
+#------- modelo de efectos aleatorios --------#
+
+randommodel<-plm(formula = pobre~prodcafe + edusup,
+    data = dataagro, model = "random",
+    index = c("depa","year"),
+    effects = "twoways" )
+
+summary(randommodel)
+
+#------- modelo pooling --------#
+
+poolmodel<-plm(formula = pobre~prodcafe + edusup,
+                data = dataagro, model = "pooling",
+                index = c("depa","year"),
+                effects = "twoways" )
+
+summary(poolmodel)
+
+# generando tabla en formato latex
+stargazer(fixedmodel,randommodel,poolmodel,
+          column.labels =c("Efectos Fijos","Efectos Aleatorios","Pooled"),
+          title = "Comparaci贸n de modelos")
+#----------------------------- ELECCION ENTRE AMBOS MODELOS ----------------------#
+
+#--------- Test de Hausman-----------#
+# Hip贸tesis nula igual a que el modelo preferido es el de efectos aleatorios
+#   "         "   igual a que los erroes unicos no estan correlacionados con los regresores
+testhausman<-phtest(fixedmodel, randommodel)
+write.table(tidy(testhausman),"testhausman.txt")
 
 
+# si es menor a 0.05 usar efectos fijos, si es mayor usar efectos aleatorios
+# en esta ocasion el p-value es mayor a 0.05, por lo tanto seguiremos con efectos aleatorios
 
 
+#---------- Breusch Pagan ------------#
+breuschpagan<-plmtest(poolmodel, type=c("bp"))
+write.table(tidy(breuschpagan),"breuschpagan.txt")
 
-
+# como es menor a 0.05, si hay diferencia significante entre los departamentos
+# por lo tanto es apropiado utilizar el modelo de efectos aleatorios
 
 
 
