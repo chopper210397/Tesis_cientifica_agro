@@ -1,6 +1,0 @@
-"0","fixedmodel<-plm(formula = pobre~prodcafe + edusup,"
-"0","    data = dataagro, model = ""within"","
-"0","    index = c(""depa"",""year""),"
-"0","    effects = ""twoways"" )"
-"2","Error in row.names(data) : object 'dataagro' not found
-"

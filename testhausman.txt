@@ -1,0 +1,2 @@
+"statistic" "p.value" "parameter" "method" "alternative"
+"1" 1.52914745828348 0.465532331551636 2 "Hausman Test" "one model is inconsistent"
